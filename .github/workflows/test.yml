@@ -27,6 +27,15 @@ jobs:
       - name: Check Huge Pages Status
         run: cat /proc/meminfo | grep Huge
 
+      - name: Check 1GB Huge Pages Support
+        run: cat /proc/cpuinfo | grep pdpe1gb || echo "1GB Huge Pages not supported"
+
+      - name: Enable 1GB Huge Pages (If Supported)
+        run: |
+          echo 3 | sudo tee /proc/sys/vm/nr_hugepages
+          sudo sysctl -w vm.nr_hugepages=3
+        continue-on-error: true
+
       - name: Load MSR Module
         run: |
           sudo modprobe msr
