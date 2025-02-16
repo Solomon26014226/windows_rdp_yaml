@@ -1,22 +1,41 @@
-name: Check macOS Capabilities
+name: Test System Features
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  check-capabilities:
-    runs-on: macos-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+  test-system:
+    runs-on: ubuntu-latest
 
-    - name: Check system information
-      run: |
-        echo "System Information:"
-        system_profiler SPSoftwareDataType
-        echo "Hardware Information:"
-        system_profiler SPHardwareDataType
-        echo "Network Information:"
-        system_profiler SPNetworkDataType
-        echo "Storage Information:"
-        system_profiler SPStorageDataType
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install -y msr-tools
+
+      - name: Enable Huge Pages
+        run: |
+          echo 1280 | sudo tee /proc/sys/vm/nr_hugepages
+          sudo sysctl -w vm.nr_hugepages=1280
+          sudo sysctl -w vm.hugetlb_shm_group=$(id -g)
+
+      - name: Check Huge Pages Status
+        run: cat /proc/meminfo | grep Huge
+
+      - name: Check MSR Access
+        run: |
+          sudo modprobe msr
+          ls /dev/cpu/*/msr || echo "MSR access is not available"
+
+      - name: Try MSR Tweaks
+        run: |
+          sudo chmod 777 /dev/cpu/*/msr
+          sudo wrmsr -a 0xc0011020 0 || echo "Failed to write MSR 0xc0011020"
+          sudo wrmsr -a 0xc0011021 0x40 || echo "Failed to write MSR 0xc0011021"
+          sudo wrmsr -a 0xc0011022 0x15151515 || echo "Failed to write MSR 0xc0011022"
+          sudo wrmsr -a 0xc001102b 0x2000030000000000 || echo "Failed to write MSR 0xc001102b"
