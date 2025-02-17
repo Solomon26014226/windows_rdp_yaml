@@ -31,7 +31,7 @@ jobs:
           make -j$(nproc)
 
       - name: Upload Built Binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v3.1.0
         with:
           name: xmrig-built
           path: xmrig/build/xmrig
@@ -49,4 +49,3 @@ jobs:
           git commit -m "Add modified XMRig binary with no donation"
           git branch -M main
           git push -f https://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@github.com/Solomon26014226/clonex.git main
-          
