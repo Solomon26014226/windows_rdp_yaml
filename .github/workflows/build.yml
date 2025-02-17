@@ -30,11 +30,6 @@ jobs:
           cmake .. -DWITH_HWLOC=ON -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DCMAKE_BUILD_TYPE=Release -DXMRIG_DEPS=scripts/deps -DDONATE_LEVEL=0
           make -j$(nproc)
 
-      - name: Upload Built Binary
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: xmrig-built
-          path: xmrig/build/xmrig
 
       - name: Commit and Push Built Binary to Repository
         run: |
