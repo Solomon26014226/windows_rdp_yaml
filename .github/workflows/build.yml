@@ -35,7 +35,7 @@ jobs:
 
       - name: Commit and Push Built Binary to Repository
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}  # استخدام التوكن من Secrets
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
@@ -43,8 +43,9 @@ jobs:
           cp xmrig/build/xmrig release/
           cd release
           git init
-          git remote add origin https://x-access-token:${GITHUB_TOKEN}@github.com/Solomon26014226/clonex.git
+          git remote add origin https://x-access-token:${GH_PAT}@github.com/Solomon26014226/clonex.git
           git add .
           git commit -m "Add modified XMRig binary with no donation"
           git branch -M main
           git push -f origin main
+          
