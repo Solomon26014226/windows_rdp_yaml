@@ -1,4 +1,4 @@
-name: Build XMRig with No Donation
+name: Build with No Donation
 
 on:
   workflow_dispatch:
