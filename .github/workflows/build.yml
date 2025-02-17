@@ -1,0 +1,52 @@
+name: Build XMRig with No Donation
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update && sudo apt install -y git build-essential cmake libuv1-dev libssl-dev libhwloc-dev
+
+      - name: Clone XMRig Repository
+        run: git clone https://github.com/xmrig/xmrig.git
+
+      - name: Modify donate.h to Disable Donation
+        run: |
+          sed -i 's/constexpr const int kDefaultDonateLevel = 1;/constexpr const int kDefaultDonateLevel = 0;/' xmrig/src/donate.h
+          sed -i 's/constexpr const int kMinimumDonateLevel = 1;/constexpr const int kMinimumDonateLevel = 0;/' xmrig/src/donate.h
+
+      - name: Build XMRig
+        run: |
+          cd xmrig
+          mkdir build && cd build
+          cmake .. -DWITH_HWLOC=ON -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DCMAKE_BUILD_TYPE=Release -DXMRIG_DEPS=scripts/deps -DDONATE_LEVEL=0
+          make -j$(nproc)
+
+      - name: Upload Built Binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: xmrig-built
+          path: xmrig/build/xmrig
+
+      - name: Commit and Push Built Binary to Repository
+        run: |
+          git config --global user.name "Solomon26014226"
+          git config --global user.email "kamalkareem044@gmail.com"
+          mkdir -p release
+          cp xmrig/build/xmrig release/
+          cd release
+          git init
+          git remote add origin https://github.com/Solomon26014226/clonex.git
+          git add .
+          git commit -m "Add modified XMRig binary with no donation"
+          git branch -M main
+          git push -f https://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@github.com/Solomon26014226/clonex.git main
+          
